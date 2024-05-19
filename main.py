@@ -1,20 +1,23 @@
 import random
 from dataclasses import dataclass
 
-raw_data = """
-vomus
-drida
-aians
-nilta
-jiesp
-aakoi
-"""
-data = raw_data.strip().split("\n")
+
+def get_grid() -> list[str]:
+    raw_data = """
+    vomus
+    drida
+    aians
+    nilta
+    jiesp
+    aakoi
+    """
+    data = [l.strip() for l in raw_data.strip().split("\n")]
+    return data
 
 
 def parse_words_from_file() -> list[str]:
     '''
-    Parses the words from the file and returns a list of words.
+    Parses the words from a file containing list of finnish words and returns them in a list.
 
     Filters out some words that are known to be excluded from the game,
     like ones that contain numbers or special characters or short ones.
@@ -60,21 +63,27 @@ def rec_find(
     if data[i][j] != word[0]:
         return None
 
-    # current = (i, j)
     if len(word) == 1:
         return [used]
-        # return [used & {current}]
 
     all_results = []
 
+    # Call recursively for all the possible directions.
     for x in range(-1, 2):
         for y in range(-1, 2):
+            # Skip the current position, only do recursion on neughbours.
             if x == 0 and y == 0:
                 continue
             pos = (i + x, j + y)
             if pos in used:
                 continue
-            result = rec_find(data, i+x, j+y, word[1:], used | {pos})
+            result = rec_find(
+                data,  # The grid never changes
+                i+x,  # Moving 1 step left or right
+                j+y,   # Moving 1 step up or down
+                word[1:],  # We are now looking for a word one character shorter
+                used | {pos}  # Add the current position to the used set. Word can not overlap itself.
+            )
             if result:
                 all_results += result
 
@@ -118,11 +127,12 @@ def find_words_for_grid(data: list[str], words: list[str]) -> list[Word]:
     return list(word_results_set)
 
 
-def words_overlap(word_1: set[tuple[int, int]], word_2: set[tuple[int, int]]) -> bool:
+def words_overlap(word_1_positions: set[tuple[int, int]], word_2_positions: set[tuple[int, int]]) -> bool:
     '''
     Returns True if the two words overlap, False otherwise.
     '''
-    return any(pos in word_1 for pos in word_2)
+    # return any(pos in word_1_positions for pos in word_2_positions)
+    return bool(word_1_positions & word_2_positions)
 
 
 def build_word_id_to_non_overlapping_word_ids_map(word_results_list: list[Word]):
@@ -195,14 +205,19 @@ def print_solution(solution: list[Word], data: list[str]):
         print()
 
 
-def find_solution_randomizer(word_results_list: list[Word]) -> list[Word]:
+def find_solution_randomizer(word_results_list: list[Word], max_tries: int | None=None) -> list[Word] | None:
     '''
     Finds a solution by randomly guessing words and checking if the solution is better than the
     previous best solution.
     '''
     wanted_len = len(''.join(data))
     best_len = 0
+    try_count = 0
     while True:
+        if max_tries is not None and try_count >= max_tries:
+            print("Best solution", best_len, wanted_len)
+            return None
+        try_count += 1
         found_words = random_guesser([], set(range(len(word_results_list))))
         found_words_total_len = sum(len(word.word) for word in found_words)
         if found_words_total_len > best_len or found_words_total_len == wanted_len:
@@ -215,6 +230,18 @@ def find_solution_randomizer(word_results_list: list[Word]) -> list[Word]:
             if best_len == wanted_len:
                 return found_words
 
+
+def build_random_grid(words: list[str]) -> list[str]:
+    '''
+    Builds a random grid for testing purposes.
+    '''
+
+    all_word_characters = ''.join(words)
+
+    return [
+        ''.join(random.choice(all_word_characters) for _ in range(5))
+        for _ in range(6)
+    ]
 
 words = parse_words_from_file()
 word_results_list: list[Word] = find_words_for_grid(data, words)
