@@ -13,6 +13,12 @@ data = raw_data.strip().split("\n")
 
 
 def parse_words_from_file() -> list[str]:
+    '''
+    Parses the words from the file and returns a list of words.
+
+    Filters out some words that are known to be excluded from the game,
+    like ones that contain numbers or special characters or short ones.
+    '''
     sanat = []
     blocked_words = {
         "jin",
@@ -42,8 +48,10 @@ def rec_find(
     used: set[tuple[int, int]],
 ) -> None | list[set[tuple[int, int]]]:
     '''
-    Takes in a grid of characters, a word to find in the grid and a location where to find the word.
-    The function is a recursive function.
+    A recursive function that tries to find the word in the grid starting from the position (i, j).
+
+    Can be used to find all of the possible words from the grid by calling it with all of the
+    possible starting positions and all of the possible words.
     '''
 
     if i < 0 or i >= len(data) or j < 0 or j >= len(data[0]):
@@ -75,6 +83,9 @@ def rec_find(
 
 @dataclass
 class Word:
+    '''
+    A class that represents a word and its locations in the grid.
+    '''
     word: str
     locations: list[tuple[int, int]]
 
@@ -86,9 +97,11 @@ class Word:
         ))
 
 
-print("Finding words from grid")
+def find_words_for_grid(data: list[str], words: list[str]) -> list[Word]:
+    '''
+    Finds all the words and their locations from the grid.
+    '''
 
-def find_words_for_grid(data: list[str], words: list[str]) -> set[Word]:
     word_results_set: set[Word] = set()
 
     for i in range(len(data)):
@@ -102,14 +115,27 @@ def find_words_for_grid(data: list[str], words: list[str]) -> set[Word]:
                         if thing not in word_results_set:
                             word_results_set.add(thing)
 
-    return word_results_set
+    return list(word_results_set)
 
 
 def words_overlap(word_1: set[tuple[int, int]], word_2: set[tuple[int, int]]) -> bool:
+    '''
+    Returns True if the two words overlap, False otherwise.
+    '''
     return any(pos in word_1 for pos in word_2)
 
 
 def build_word_id_to_non_overlapping_word_ids_map(word_results_list: list[Word]):
+    '''
+    Builds a mapping from word id to a set of word ids that do not overlap with the word.
+
+    For an example if we have words "cat", "dog" and "rat" and "cat" and "dog" overlap, the mapping would be:
+    {
+        0: {2},
+        1: {2},
+        2: {0, 1},
+    }
+    '''
     mapping: dict[int, set[int]] = {}
 
     for i, word_1 in enumerate(word_results_list):
@@ -125,6 +151,11 @@ def build_word_id_to_non_overlapping_word_ids_map(word_results_list: list[Word])
 
 
 def random_guesser(current: list[Word], available_word_ids: set[int]) -> list[Word]:
+    '''
+    A recursive function that tries to find a solution by randomly choosing words from the available words.
+
+    Returns a random solution that might or might not be the best solution.
+    '''
     if len(available_word_ids) == 0:
         return current
 
@@ -138,6 +169,9 @@ def random_guesser(current: list[Word], available_word_ids: set[int]) -> list[Wo
 
 
 def print_solution(solution: list[Word], data: list[str]):
+    '''
+    Prints the solution. Colors show the different words.
+    '''
     for i in range(len(data)):
         for j in range(len(data[0])):
             character = data[i][j]
@@ -162,6 +196,10 @@ def print_solution(solution: list[Word], data: list[str]):
 
 
 def find_solution_randomizer(word_results_list: list[Word]) -> list[Word]:
+    '''
+    Finds a solution by randomly guessing words and checking if the solution is better than the
+    previous best solution.
+    '''
     wanted_len = len(''.join(data))
     best_len = 0
     while True:
@@ -179,6 +217,6 @@ def find_solution_randomizer(word_results_list: list[Word]) -> list[Word]:
 
 
 words = parse_words_from_file()
-word_results_list: list[Word] = list(find_words_for_grid(data, words))
+word_results_list: list[Word] = find_words_for_grid(data, words)
 word_id_to_non_overlapping_word_ids_map = build_word_id_to_non_overlapping_word_ids_map(word_results_list)
 solution = find_solution_randomizer(word_results_list)
