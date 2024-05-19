@@ -1,27 +1,37 @@
 import random
+from dataclasses import dataclass
 
 raw_data = """
-joötä
-urpnä
-mrtni
-piöyn
-kapey
-kotas
+vomus
+drida
+aians
+nilta
+jiesp
+aakoi
 """
-
 data = raw_data.strip().split("\n")
 
-sanat = []
-with open ("nykysuomensanalista2024.csv") as f:
-    for i, line in enumerate(f):
-        if i == 0:
-            continue
-        word = line.split()[0].lower()
-        if any(n in word for n in "0123456789-"):
-            continue
-        if len(word) < 3:
-            continue
-        sanat.append(word)
+
+def parse_words_from_file() -> list[str]:
+    sanat = []
+    blocked_words = {
+        "jin",
+        "art",
+        "mirin",
+    }
+    with open ("nykysuomensanalista2024.csv") as f:
+        for i, line in enumerate(f):
+            if i == 0:
+                continue
+            word = line.split()[0].lower()
+            if any(n in word for n in "0123456789-"):
+                continue
+            if len(word) < 3:
+                continue
+            if word in blocked_words:
+                continue
+            sanat.append(word)
+    return sanat
 
 
 def rec_find(
@@ -31,8 +41,13 @@ def rec_find(
     word: str,
     used: set[tuple[int, int]],
 ) -> None | list[set[tuple[int, int]]]:
+    '''
+    Takes in a grid of characters, a word to find in the grid and a location where to find the word.
+    The function is a recursive function.
+    '''
+
     if i < 0 or i >= len(data) or j < 0 or j >= len(data[0]):
-        return False
+        return None
 
     if data[i][j] != word[0]:
         return None
@@ -57,80 +72,113 @@ def rec_find(
 
     return all_results
 
-word_results: set[tuple[str, tuple[tuple[int, int]], ...]] = set()
 
-for i in range(len(data)):
-    for j in range(len(data[0])):
-        for sana in sanat:
-            result = rec_find(data, i, j, sana, {(i, j)})
-            if result:
-                for r in result:
-                    r = tuple(sorted(list(r)))
-                    thing = (sana, r)
-                    if thing not in word_results:
-                        word_results.add(thing)
-                        print(thing)
+@dataclass
+class Word:
+    word: str
+    locations: list[tuple[int, int]]
 
-
-# breakpoint()
-# already_seen_sets = {}
+    def __hash__(self):
+        return hash((
+            self.word,
+            # It should be enought to use the set in the has since the ordering does not matter
+            tuple(self.locations)
+        ))
 
 
-def try_words(current: tuple[list, set]) -> tuple[list, set]:
-    current_words, current_set = current
+print("Finding words from grid")
 
-    best = current
+def find_words_for_grid(data: list[str], words: list[str]) -> set[Word]:
+    word_results_set: set[Word] = set()
 
-    for word, used in word_results:
-        # if len(current[0]) < 4:
-        # print("  " * len(current[0]), word)
-        if len(current_set | set(used)) != len(current_set) + len(set(used)):
-            continue
+    for i in range(len(data)):
+        for j in range(len(data[0])):
+            for word in words:
+                result = rec_find(data, i, j, word, {(i, j)})
+                if result:
+                    for r in result:
+                        other_r: list[tuple[int, int]] = list(sorted(list(r)))
+                        thing = Word(word=word, locations=other_r)
+                        if thing not in word_results_set:
+                            word_results_set.add(thing)
 
-        found_thing = try_words(
-            (current_words + [word], current_set | set(used)),
-        )
-
-        if len(found_thing[1]) > len(best[1]):
-            best = found_thing
-
-    return best
+    return word_results_set
 
 
-word_results_list = list(word_results)
+def words_overlap(word_1: set[tuple[int, int]], word_2: set[tuple[int, int]]) -> bool:
+    return any(pos in word_1 for pos in word_2)
 
 
-def random_guesser(current: tuple[list, set]) -> tuple[list, set]:
-    current_words, current_set = current
+def build_word_id_to_non_overlapping_word_ids_map(word_results_list: list[Word]):
+    mapping: dict[int, set[int]] = {}
 
-    best = current
-
-    random.shuffle(word_results_list)
-    for word, used in word_results_list:
-        if len(current_set | set(used)) != len(current_set) + len(set(used)):
-            continue
-
-        found_thing = random_guesser(
-            (current_words + [word], current_set | set(used)),
-        )
-        return found_thing
-
-    return best
+    for i, word_1 in enumerate(word_results_list):
+        i_set = set()
+        for j, word_2 in enumerate(word_results_list):
+            if i == j:
+                continue
+            if words_overlap(set(word_1.locations), set(word_2.locations)):
+                continue
+            i_set.add(j)
+        mapping[i] = i_set
+    return mapping
 
 
-# arg = ([], set())
-# best = try_words(arg)
-# print(best)
+def random_guesser(current: list[Word], available_word_ids: set[int]) -> list[Word]:
+    if len(available_word_ids) == 0:
+        return current
 
-initial = ([], set())
-best = initial
-while True:
-    found_thing = random_guesser(initial)
-    if len(found_thing[1]) > len(best[1]):
-        best = found_thing
-        best_len = len(''.join(best[0]))
-        wanted_len = len(''.join(data))
-        print(f"{best_len}/{wanted_len} {best[0]}")
-        if best_len == wanted_len:
-            break
+    randomly_chosen_id = random.choice(list(available_word_ids))
+    word = word_results_list[randomly_chosen_id]
 
+    return random_guesser(
+        current + [word],
+        available_word_ids & word_id_to_non_overlapping_word_ids_map[randomly_chosen_id],
+    )
+
+
+def print_solution(solution: list[Word], data: list[str]):
+    for i in range(len(data)):
+        for j in range(len(data[0])):
+            character = data[i][j]
+
+            word = next((w for w in solution if (i, j) in w.locations), None)
+
+            if word is None:
+                print(character, end="")
+                continue
+
+            word_index = solution.index(word)
+
+            # Random color based on word_index
+            color = 31 + word_index % 6
+
+            # Print character with the color
+            print(f"\033[{color}m{character}", end="")
+
+            # Reset the color
+            print("\033[0m", end="")
+        print()
+
+
+def find_solution_randomizer(word_results_list: list[Word]) -> list[Word]:
+    wanted_len = len(''.join(data))
+    best_len = 0
+    while True:
+        found_words = random_guesser([], set(range(len(word_results_list))))
+        found_words_total_len = sum(len(word.word) for word in found_words)
+        if found_words_total_len > best_len or found_words_total_len == wanted_len:
+            best_len = found_words_total_len
+
+            found_words_str_list = sorted([w.word for w in found_words])
+            print(f"{best_len}/{wanted_len} {found_words_str_list}")
+            print_solution(found_words, data)
+
+            if best_len == wanted_len:
+                return found_words
+
+
+words = parse_words_from_file()
+word_results_list: list[Word] = list(find_words_for_grid(data, words))
+word_id_to_non_overlapping_word_ids_map = build_word_id_to_non_overlapping_word_ids_map(word_results_list)
+solution = find_solution_randomizer(word_results_list)
