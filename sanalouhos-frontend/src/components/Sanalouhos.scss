@@ -1,0 +1,56 @@
+.sanalouhos {
+  table.sanalouhos-table {
+    border-collapse: collapse;
+
+    tbody {
+      //border: 1px solid black;
+      tr {
+        //border: 1px solid black;
+        td {
+          //border: 1px solid black;
+          padding: 0;
+
+          .sanalouhos-input {
+            padding: 0;
+            margin: 0;
+            //border: 1px solid red;
+            width: 30px;
+            height: 30px;
+
+            text-align: center;
+          }
+
+          position: relative;
+
+          .solution-shower {
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            position: absolute;
+
+            width: 16px;
+            height: 16px;
+            border-radius: 8px;
+
+            position: absolute;
+
+            &.start {
+              background-color: rgba(0, 255, 0, 0.5);
+              z-index: 20;
+            }
+
+            .inner {
+              z-index: 10;
+              height: 40px;
+              width: 16px;
+              border-radius: 8px;
+              background-color: rgba(255, 0, 0, 0.2);
+              display: block;
+              transform-origin: 8px 8px;
+            }
+          }
+        }
+      }
+    }
+  }
+}
