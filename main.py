@@ -4,12 +4,12 @@ from dataclasses import dataclass
 
 def get_grid() -> list[str]:
     raw_data = """
-    vomus
-    drida
-    aians
-    nilta
-    jiesp
-    aakoi
+    suuet
+    amvei
+    lmide
+    aoaul
+    mtals
+    isaäa
     """
     data = [l.strip() for l in raw_data.strip().split("\n")]
     return data
@@ -27,6 +27,7 @@ def parse_words_from_file() -> list[str]:
         "jin",
         "art",
         "mirin",
+        "eau",
     }
     with open ("nykysuomensanalista2024.csv") as f:
         for i, line in enumerate(f):
@@ -182,27 +183,63 @@ def print_solution(solution: list[Word], data: list[str]):
     '''
     Prints the solution. Colors show the different words.
     '''
+
+    UNDERLINE = '\033[4m'
+    HEADER = '\033[95m'
+    ENDC = '\033[0m'
+
+    print(" " * (len(data[0]) + 5) + ''.join([
+         f"\033[{(31 + i % 6)}m" + w.word + ENDC + " " * (5 + len(data[0]) - len(w.word)) for i, w in enumerate(solution)
+    ]))
+
+    print(("+" + "-" * (len(data[0])) + "+" + "   ") * (len(solution) + 1))
+
     for i in range(len(data)):
-        for j in range(len(data[0])):
-            character = data[i][j]
+        for k in range(len(solution) + 1):
+            if k == 0:
+                print("|", end="")
 
-            word = next((w for w in solution if (i, j) in w.locations), None)
+            for j in range(len(data[0])):
+                character = data[i][j]
 
-            if word is None:
-                print(character, end="")
-                continue
+                word = next((w for w in solution if (i, j) in w.locations), None)
 
-            word_index = solution.index(word)
+                if word is None:
+                    print(character, end="")
+                    continue
 
-            # Random color based on word_index
-            color = 31 + word_index % 6
+                word_index = solution.index(word)
+                letter_index = word.locations.index((i, j))
 
-            # Print character with the color
-            print(f"\033[{color}m{character}", end="")
+                if k == 0 or k - 1 == word_index:
+                    should_have_background_color = letter_index == 0 and k != 0
+                    # Print character with the color
+                    # print(f"\033[{color}m{character}", end="")
+                    color = 31 + word_index % 6
+                    color_string = f"\033[{color}m"
+                    if should_have_background_color:
+                        # Print the character with background color as what is in the color variable and the text color as black
+                        # print(f"\033[47m{character}", end="")
+                        # print(f"\033[4m{color_string}{character}", end="")
+                        # print(f"\033[47m{color_string}{character}", end="")
+                        print(UNDERLINE + color_string + character + ENDC, end="")
+                    else:
+                        print(f"{color_string}{character}", end="")
 
-            # Reset the color
-            print("\033[0m", end="")
+                else:
+                    print(" ", end="")
+
+                # Reset the color
+                print("\033[0m", end="")
+
+            if k != len(solution):
+                print("|   |", end="")
+            else:
+                print("|", end="")
+
         print()
+
+    print(("+" + "-" * (len(data[0])) + "+" + "   ") * (len(solution) + 1))
 
 
 def find_solution_randomizer(word_results_list: list[Word], max_tries: int | None=None) -> list[Word] | None:
@@ -224,10 +261,10 @@ def find_solution_randomizer(word_results_list: list[Word], max_tries: int | Non
             best_len = found_words_total_len
 
             found_words_str_list = sorted([w.word for w in found_words])
-            print(f"{best_len}/{wanted_len} {found_words_str_list}")
-            print_solution(found_words, data)
 
             if best_len == wanted_len:
+            #     print(f"{best_len}/{wanted_len} {found_words_str_list} {try_count}")
+            #     print_solution(found_words, data)
                 return found_words
 
 
@@ -244,6 +281,33 @@ def build_random_grid(words: list[str]) -> list[str]:
     ]
 
 words = parse_words_from_file()
+
+# if True:
+# # for i in range(10000):
+#     data = get_grid()
+#     # data = build_random_grid(words)
+#     # print("Parsing the word file")
+#     # print("Finding the words from the grid")
+#     word_results_list: list[Word] = find_words_for_grid(data, words)
+#     # print("Building the word id to non overlapping word ids map")
+#     word_id_to_non_overlapping_word_ids_map = build_word_id_to_non_overlapping_word_ids_map(word_results_list)
+#     # print("Finding the solution")
+#     solution = find_solution_randomizer(word_results_list, 20000)
+#     # print("Found the solution")
+#     if solution is None:
+#         pass
+#         # print("Did not find")
+#     else:
+#         print("FOUND IT!")
+
+data = get_grid()
 word_results_list: list[Word] = find_words_for_grid(data, words)
 word_id_to_non_overlapping_word_ids_map = build_word_id_to_non_overlapping_word_ids_map(word_results_list)
-solution = find_solution_randomizer(word_results_list)
+found_solutions = set()
+while True:
+    solution = find_solution_randomizer(word_results_list)
+    solution_words = tuple(sorted([w.word for w in solution]))
+    if solution_words in found_solutions:
+        continue
+    found_solutions.add(solution_words)
+    print_solution(solution, data)
