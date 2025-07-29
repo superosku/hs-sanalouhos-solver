@@ -22,34 +22,59 @@
 
           position: relative;
 
-          .solution-shower {
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            position: absolute;
-
-            width: 16px;
-            height: 16px;
-            border-radius: 8px;
-
-            position: absolute;
-
-            &.start {
-              background-color: rgba(0, 255, 0, 0.5);
-              z-index: 20;
-            }
-
-            .inner {
-              z-index: 10;
-              height: 40px;
-              width: 16px;
-              border-radius: 8px;
-              background-color: rgba(255, 0, 0, 0.2);
-              display: block;
-              transform-origin: 8px 8px;
-            }
-          }
         }
+      }
+    }
+  }
+
+  .table-and-solution-container {
+    position: relative;
+  }
+
+  .solution-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+
+    opacity: 0.3;
+
+    pointer-events: none;
+
+    .solution-shower {
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+
+      position: absolute;
+
+      width: 16px;
+      height: 16px;
+      border-radius: 8px;
+
+      .word-start-circle {
+        border: 1px solid white;
+        background-color: purple;
+        border-radius: 8px;
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+      }
+
+      &.start {
+        background-color: rgba(0, 255, 0, 1.0);
+        z-index: 20;
+      }
+
+      .inner {
+        z-index: 10;
+        height: 40px;
+        width: 16px;
+        border-radius: 8px;
+        background-color: rgba(255, 0, 0, 1.0);
+        display: block;
+        transform-origin: 8px 8px;
       }
     }
   }

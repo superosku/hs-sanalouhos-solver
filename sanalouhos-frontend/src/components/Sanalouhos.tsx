@@ -33,6 +33,92 @@ const loadRawWords = () : string[] => {
 export const allWords = loadRawWords();
 
 
+const SolutionOverlay = ({bestGuess}: {bestGuess: Word[]}) => {
+  const getColumnThings = React.useMemo(() => {
+    return (word: Word, foundIndex: number, x: number, y: number) => {
+      // if (bestGuess === undefined) {
+      //   return <></>;
+      // }
+      // for (let i = 0; i < bestGuess.length; i++) {
+      //   const word = bestGuess[i];
+
+        // const foundIndex = word.sortedPositions.findIndex((pos => pos.x === x && pos.y === y));
+        //
+        // if (foundIndex !== -1) {
+          let span1 = undefined;
+          let span2 = undefined;
+
+          if (foundIndex > 0) {
+            const xDirection = word.sortedPositions[foundIndex - 1].x - x;
+            const yDirection = word.sortedPositions[foundIndex - 1].y - y;
+            // x and y dir are -1, 0, or 1, calculate rotation based on them. Use math with cosin and sine
+            const angle = Math.atan2(-xDirection, yDirection);
+
+            span1 = <span
+              className={`solution-shower non-start`}
+              style={{
+                top: `${y * 34 + 17}px`,
+                left: `${x * 34 + 17}px`,
+              }}
+            >
+              <span
+                className={`inner`}
+                style={{
+                  transform: `rotate(${angle}rad)`,
+                  // width: "1em",
+                  // height: "1em",
+                  // display: "inline-block",
+                }}
+              ></span>
+            </span>;
+          }
+          if (foundIndex < word.sortedPositions.length - 1) {
+            const xDirection = word.sortedPositions[foundIndex + 1].x - x;
+            const yDirection = word.sortedPositions[foundIndex + 1].y - y;
+            // x and y dir are -1, 0, or 1, calculate rotation based on them. Use math with cosin and sine
+            const angle = Math.atan2(-xDirection, yDirection);
+
+            const isStart = foundIndex === 0;
+
+            span2 = <span
+              className={`solution-shower ${isStart ? "start" : "non-start"}`}
+              style={{
+                top: `${y * 34 + 17}px`,
+                left: `${x * 34 + 17}px`,
+              }}
+
+            >
+              <span
+                className={`inner`}
+                style={{
+                  transform: `rotate(${angle}rad)`,
+                }}
+              ></span>
+              {isStart && <span className={"word-start-circle"}></span>}
+            </span>;
+          }
+
+          return <>
+            {span1} {span2}
+          </>
+        // }
+      // }
+      // return <>
+      // </>
+    }
+  }, [bestGuess]);
+
+  return <div className={"solution-overlay"}>
+    {bestGuess.map(guessedWord => {
+      return <>{guessedWord.sortedPositions.map((pos, index) => {
+        return getColumnThings(guessedWord, index, pos.x, pos.y);
+      })}</>
+    })}
+
+  </div>
+}
+
+
 export const Sanalouhos = () => {
   // Data is a 4x4 grid of strings
   const [data, setData] = React.useState<string[][]>([
@@ -68,117 +154,53 @@ export const Sanalouhos = () => {
     return data.length * data[0].length;
   }, [data])
 
-  const getColumnThings = React.useMemo(() => {
-    return (x: number, y: number) => {
-      if (bestGuess === undefined) {
-        return <></>;
-      }
-      for (let i = 0; i < bestGuess.length; i++) {
-        const word = bestGuess[i];
-
-        const foundIndex = word.sortedPositions.findIndex((pos => pos.x === x && pos.y === y));
-
-        if (foundIndex !== -1) {
-          let span1 = undefined;
-          let span2 = undefined;
-
-          if (foundIndex > 0) {
-            const xDirection = word.sortedPositions[foundIndex - 1].x - x;
-            const yDirection = word.sortedPositions[foundIndex - 1].y - y;
-            // x and y dir are -1, 0, or 1, calculate rotation based on them. Use math with cosin and sine
-            const angle = Math.atan2(-xDirection, yDirection);
-
-            span1 = <span className={`solution-shower non-start`}>
-              <span
-                className={`inner`}
-                style={{
-                  transform: `rotate(${angle}rad)`,
-                  // width: "1em",
-                  // height: "1em",
-                  // display: "inline-block",
-                }}
-              ></span>
-            </span>;
-          }
-          if (foundIndex < word.sortedPositions.length - 1) {
-            const xDirection = word.sortedPositions[foundIndex + 1].x - x;
-            const yDirection = word.sortedPositions[foundIndex + 1].y - y;
-            // x and y dir are -1, 0, or 1, calculate rotation based on them. Use math with cosin and sine
-            const angle = Math.atan2(-xDirection, yDirection);
-
-            const isStart = foundIndex === 0;
-
-            span2 = <span className={`solution-shower ${isStart ? "start" : "non-start"}`}>
-              <span
-                className={`inner`}
-                style={{
-                  transform: `rotate(${angle}rad)`,
-                  // width: "1em",
-                  // height: "1em",
-                  // display: "inline-block",
-                }}
-              ></span>
-            </span>;
-          }
-
-          return <>
-            {span1} {span2}
-          </>
-          //
-          // else {
-          //   return <span className={"solution-shower start"}></span>;
-          // }
-        }
-      }
-      return <>
-      </>
-    }
-  }, [bestGuess]);
 
   return (
     <div className="sanalouhos">
       <h1>Sanalouhos</h1>
       <p>Welcome to the Sanalouhos component!</p>
-      <table className={"sanalouhos-table"}>
-        <tbody>
-        {data.map((row, rowIndex) => (
-          <tr key={rowIndex}>
-            {row.map((cell, cellIndex) => (
-              <td key={cellIndex}>
-                {getColumnThings(cellIndex, rowIndex)}
-                <input
-                  className={"sanalouhos-input"}
-                  type="text"
-                  ref={(el) => {
-                    if (el) {
-                      inputRefs.current[rowIndex][cellIndex] = el;
-                    }
-                  }}
-                  value={cell}
-                  onChange={(e) => {
-                    const nextCell = cellIndex === row.length - 1 ? 0 : cellIndex + 1;
-                    const nextRow = nextCell === 0 ? rowIndex + 1 : rowIndex;
+      <div className={"table-and-solution-container"}>
+        <table className={"sanalouhos-table"}>
+          <tbody>
+          {data.map((row, rowIndex) => (
+            <tr key={rowIndex}>
+              {row.map((cell, cellIndex) => (
+                <td key={cellIndex}>
+                  <input
+                    className={"sanalouhos-input"}
+                    type="text"
+                    ref={(el) => {
+                      if (el) {
+                        inputRefs.current[rowIndex][cellIndex] = el;
+                      }
+                    }}
+                    value={cell}
+                    onChange={(e) => {
+                      const nextCell = cellIndex === row.length - 1 ? 0 : cellIndex + 1;
+                      const nextRow = nextCell === 0 ? rowIndex + 1 : rowIndex;
 
-                    const newData = [...data];
-                    const inputData = e.target.value;
-                    const lastLetter = inputData.slice(-1).toLowerCase();
-                    newData[rowIndex][cellIndex] = lastLetter;
-                    setData(newData);
+                      const newData = [...data];
+                      const inputData = e.target.value;
+                      const lastLetter = inputData.slice(-1).toLowerCase();
+                      newData[rowIndex][cellIndex] = lastLetter;
+                      setData(newData);
 
-                    // If out of bounds, focus on the first cell
-                    if (nextRow >= data.length) {
-                      inputRefs.current[0][0]?.focus();
-                    } else {
-                      inputRefs.current[nextRow][nextCell]?.focus();
-                    }
-                  }}
-                />
-              </td>
-            ))}
-          </tr>
-        ))}
-        </tbody>
-      </table>
+                      // If out of bounds, focus on the first cell
+                      if (nextRow >= data.length) {
+                        inputRefs.current[0][0]?.focus();
+                      } else {
+                        inputRefs.current[nextRow][nextCell]?.focus();
+                      }
+                    }}
+                  />
+                </td>
+              ))}
+            </tr>
+          ))}
+          </tbody>
+        </table>
+        {bestGuess && <SolutionOverlay bestGuess={bestGuess} />}
+      </div>
 
       <button
         onClick={() => {
