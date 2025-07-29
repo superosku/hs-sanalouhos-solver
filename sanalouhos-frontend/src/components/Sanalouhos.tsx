@@ -34,17 +34,46 @@ export const allWords = loadRawWords();
 
 
 const SolutionOverlay = ({bestGuess}: {bestGuess: Word[]}) => {
+  // const gridSize = 80;
+
+  // Grid size is parent element width divided by 5
+
+  const findGridSize = () => {
+    const parentElement = document.querySelector('.sanalouhos-table');
+    if (parentElement) {
+      console.log("Finding gridSize: ", parentElement.clientWidth, " / 5 = ", parentElement.clientWidth / 5)
+      return parentElement.clientWidth / 5;
+    }
+    console.warn("Could not find parent element for grid size, returning default size");
+    return 80; // default size
+  }
+
+  // const gridSize = React.useMemo(() => {
+  //   return findGridSize();
+  // }, []);
+  const [gridSize, setGridSize] = React.useState(findGridSize);
+
+  // Update girdSize when window resizes
+
+  React.useEffect(() => {
+    const handleResize = () => {
+      // Force re-render to update grid size
+      // setTimeout(() => {
+      setGridSize(findGridSize());
+        // This will trigger a re-render
+      // }, 0);
+    };
+
+    console.log("adding resize listener, gridSize: ", gridSize)
+    window.addEventListener('resize', handleResize);
+    return () => {
+      console.log("removing resize listener, gridSize: ", gridSize)
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
   const getColumnThings = React.useMemo(() => {
     return (word: Word, foundIndex: number, x: number, y: number) => {
-      // if (bestGuess === undefined) {
-      //   return <></>;
-      // }
-      // for (let i = 0; i < bestGuess.length; i++) {
-      //   const word = bestGuess[i];
-
-        // const foundIndex = word.sortedPositions.findIndex((pos => pos.x === x && pos.y === y));
-        //
-        // if (foundIndex !== -1) {
           let span1 = undefined;
           let span2 = undefined;
 
@@ -53,16 +82,17 @@ const SolutionOverlay = ({bestGuess}: {bestGuess: Word[]}) => {
             const yDirection = word.sortedPositions[foundIndex - 1].y - y;
             // x and y dir are -1, 0, or 1, calculate rotation based on them. Use math with cosin and sine
             const angle = Math.atan2(-xDirection, yDirection);
+            const isCornerToCorner = (xDirection !== 0 && yDirection !== 0);
 
             span1 = <span
               className={`solution-shower non-start`}
               style={{
-                top: `${y * 34 + 17}px`,
-                left: `${x * 34 + 17}px`,
+                top: `${(y + 0.5) * gridSize}px`,
+                left: `${(x + 0.5) * gridSize}px`,
               }}
             >
               <span
-                className={`inner`}
+                className={`inner ${isCornerToCorner ? "corner-to-corner" : ""}`}
                 style={{
                   transform: `rotate(${angle}rad)`,
                   // width: "1em",
@@ -78,18 +108,19 @@ const SolutionOverlay = ({bestGuess}: {bestGuess: Word[]}) => {
             // x and y dir are -1, 0, or 1, calculate rotation based on them. Use math with cosin and sine
             const angle = Math.atan2(-xDirection, yDirection);
 
+            const isCornerToCorner = (xDirection !== 0 && yDirection !== 0);
             const isStart = foundIndex === 0;
 
             span2 = <span
               className={`solution-shower ${isStart ? "start" : "non-start"}`}
               style={{
-                top: `${y * 34 + 17}px`,
-                left: `${x * 34 + 17}px`,
+                top: `${(y + 0.5) * gridSize}px`,
+                left: `${(x + 0.5) * gridSize}px`,
               }}
 
             >
               <span
-                className={`inner`}
+                className={`inner ${isCornerToCorner ? "corner-to-corner" : ""}`}
                 style={{
                   transform: `rotate(${angle}rad)`,
                 }}
@@ -106,7 +137,7 @@ const SolutionOverlay = ({bestGuess}: {bestGuess: Word[]}) => {
       // return <>
       // </>
     }
-  }, [bestGuess]);
+  }, [bestGuess, gridSize]);
 
   return <div className={"solution-overlay"}>
     {bestGuess.map(guessedWord => {
@@ -157,53 +188,62 @@ export const Sanalouhos = () => {
 
   return (
     <div className="sanalouhos">
-      <h1>Sanalouhos</h1>
-      <p>Welcome to the Sanalouhos component!</p>
+      <h1>Sanalouhos Solver</h1>
       <div className={"table-and-solution-container"}>
+        {bestGuess && <SolutionOverlay bestGuess={bestGuess} />}
         <table className={"sanalouhos-table"}>
           <tbody>
           {data.map((row, rowIndex) => (
             <tr key={rowIndex}>
-              {row.map((cell, cellIndex) => (
-                <td key={cellIndex}>
-                  <input
-                    className={"sanalouhos-input"}
-                    type="text"
-                    ref={(el) => {
-                      if (el) {
-                        inputRefs.current[rowIndex][cellIndex] = el;
-                      }
-                    }}
-                    value={cell}
-                    onChange={(e) => {
-                      const nextCell = cellIndex === row.length - 1 ? 0 : cellIndex + 1;
-                      const nextRow = nextCell === 0 ? rowIndex + 1 : rowIndex;
+              {row.map((cell, cellIndex) => {
+                const partOfSolution = bestGuess && bestGuess.find(word => {
+                  return word.sortedPositions.some(pos => {
+                    return pos.x === cellIndex && pos.y === rowIndex;
+                  });
+                });
 
-                      const newData = [...data];
-                      const inputData = e.target.value;
-                      const lastLetter = inputData.slice(-1).toLowerCase();
-                      newData[rowIndex][cellIndex] = lastLetter;
-                      setData(newData);
+                return <td key={cellIndex}>
+                  <div className={"input-wrapper"}>
+                    <input
+                      className={"sanalouhos-input " + (partOfSolution ? "part-of-solution" : "not-part-of-solution")}
+                      type="text"
+                      ref={(el) => {
+                        if (el) {
+                          inputRefs.current[rowIndex][cellIndex] = el;
+                        }
+                      }}
+                      value={cell}
+                      onChange={(e) => {
+                        const nextCell = cellIndex === row.length - 1 ? 0 : cellIndex + 1;
+                        const nextRow = nextCell === 0 ? rowIndex + 1 : rowIndex;
 
-                      // If out of bounds, focus on the first cell
-                      if (nextRow >= data.length) {
-                        inputRefs.current[0][0]?.focus();
-                      } else {
-                        inputRefs.current[nextRow][nextCell]?.focus();
-                      }
-                    }}
-                  />
+                        const newData = [...data];
+                        const inputData = e.target.value;
+                        const lastLetter = inputData.slice(-1).toLowerCase();
+                        newData[rowIndex][cellIndex] = lastLetter;
+                        setData(newData);
+                        setBestGuess(undefined);
+
+                        // If out of bounds, focus on the first cell
+                        if (nextRow >= data.length) {
+                          inputRefs.current[0][0]?.focus();
+                        } else {
+                          inputRefs.current[nextRow][nextCell]?.focus();
+                        }
+                      }}
+                    />
+                  </div>
                 </td>
-              ))}
+              })}
             </tr>
           ))}
           </tbody>
         </table>
-        {bestGuess && <SolutionOverlay bestGuess={bestGuess} />}
       </div>
 
       <button
         onClick={() => {
+          setBestGuess(undefined);
           if (intervalId) {
             window.clearInterval(intervalId);
             setIntervalId(undefined);
@@ -253,10 +293,10 @@ export const Sanalouhos = () => {
           setIntervalId(scopedIntervalId);
         }}
       >
-        Solve
+        {intervalId ? "Solving..." : "Solve"}
       </button>
       {guessValue !== undefined &&
-        <h3>{guessValue} / {charactersToGuess}</h3>
+        <h3>Found: {guessValue} / {charactersToGuess}</h3>
       }
     </div>
   );

@@ -1,6 +1,14 @@
 .sanalouhos {
+  width: 100%;
+  //h1, p, span, div {
+  //  color: white;
+  //}
+  //background-color: black;
+
   table.sanalouhos-table {
     border-collapse: collapse;
+    width: 100%;
+    table-layout: fixed;
 
     tbody {
       //border: 1px solid black;
@@ -9,15 +17,52 @@
         td {
           //border: 1px solid black;
           padding: 0;
+          aspect-ratio: 1/1;
 
-          .sanalouhos-input {
-            padding: 0;
-            margin: 0;
-            //border: 1px solid red;
-            width: 30px;
-            height: 30px;
+          .input-wrapper {
+            width: 100%;
+            padding-bottom: 100%;
+            position: relative;
 
-            text-align: center;
+
+            .sanalouhos-input {
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              position: absolute;
+              //padding: 0;
+              //margin: 0;
+              //border: 1px solid red;
+              // width and height 30px but when screen is less than 250px, width and height 20px
+              width: 30px;
+              height: 30px;
+              @media (max-width: 350px) {
+                width: 20px;
+                height: 20px;
+              }
+
+              text-align: center;
+              border: none;
+
+              &.part-of-solution {
+                background-color: transparent;
+              }
+
+              &.not-part-of-solution {
+                background-color: #444444;
+              }
+
+              color: white;
+              font-weight: bold;
+              font-size: 26px;
+              //margin: 5px;
+              padding: 10px;
+              border-radius: 15px;
+
+              &:focus {
+                outline: none;
+              }
+            }
           }
 
           position: relative;
@@ -36,7 +81,7 @@
     top: 0;
     left: 0;
 
-    opacity: 0.3;
+    //opacity: 0.3;
 
     pointer-events: none;
 
@@ -47,14 +92,14 @@
 
       position: absolute;
 
-      width: 16px;
-      height: 16px;
-      border-radius: 8px;
+      width: 26px;
+      height: 26px;
+      border-radius: 16px;
 
       .word-start-circle {
         border: 1px solid white;
-        background-color: purple;
-        border-radius: 8px;
+        //background-color: purple;
+        border-radius: 16px;
         position: absolute;
         top: 0;
         right: 0;
@@ -62,19 +107,30 @@
         left: 0;
       }
 
-      &.start {
-        background-color: rgba(0, 255, 0, 1.0);
-        z-index: 20;
-      }
-
       .inner {
-        z-index: 10;
-        height: 40px;
-        width: 16px;
-        border-radius: 8px;
-        background-color: rgba(255, 0, 0, 1.0);
+        height: 16vw;
+        &.corner-to-corner {
+            height: 25vw;
+        }
+
+        // When screen is wider than 400px, height is constant
+
+        @media (min-width: 400px) {
+          height: 60px;
+          &.corner-to-corner {
+            height: 80px;
+          }
+        }
+
+        width: 26px;
+        //border-radius: 16px;
+        border-top-left-radius: 16px;
+        border-top-right-radius: 16px;
+        //background-color: rgba(255, 0, 0, 1.0);
+        //background-color: gray;
+        background-color: #444444;
         display: block;
-        transform-origin: 8px 8px;
+        transform-origin: 13px 13px;
       }
     }
   }
