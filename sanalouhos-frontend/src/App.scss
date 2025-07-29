@@ -16,6 +16,18 @@ button {
   cursor: pointer;
 }
 
+input {
+  background-color: #444444;
+  //background-color: #7979ff;
+  color: white;
+  font-size: 16px;
+  padding: 10px 16px;
+  border-radius: 30px;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+}
+
 .App {
   display: flex;
   justify-content: center;

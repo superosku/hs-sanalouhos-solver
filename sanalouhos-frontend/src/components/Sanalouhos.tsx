@@ -172,6 +172,18 @@ export const Sanalouhos = () => {
   const [bestGuess, setBestGuess] = React.useState<Word[] | undefined>(undefined);
   const [intervalId, setIntervalId] = React.useState<number | undefined>(undefined);
 
+  const [blockWordsString, setBlockWordsString] = React.useState<string>("jin,art,mirin,eau");
+
+  const blockWords = React.useMemo(() => {
+    return blockWordsString.split(',').map(word => word.trim().toLowerCase()).filter(word => word.length > 0);
+  }, [blockWordsString])
+
+  const allWordsButBlocked = React.useMemo(() => {
+    return allWords.filter(word => {
+      return blockWords.findIndex(blockedWord => blockedWord.toLowerCase() === word.toLowerCase()) === -1;
+    });
+  }, [blockWords]);
+
   const guessValue = React.useMemo<undefined | number>(() => {
     if (bestGuess !== undefined) {
       return bestGuess.reduce((acc, word) => {
@@ -189,6 +201,15 @@ export const Sanalouhos = () => {
   return (
     <div className="sanalouhos">
       <h1>Sanalouhos Solver</h1>
+      <h3>Blocked words:</h3>
+      <input type={"text"} value={blockWordsString} onChange={
+        (e) => {
+          setBlockWordsString(e.target.value);
+        }
+      }>
+
+      </input>
+
       <div className={"table-and-solution-container"}>
         {bestGuess && <SolutionOverlay bestGuess={bestGuess} />}
         <table className={"sanalouhos-table"}>
@@ -251,7 +272,7 @@ export const Sanalouhos = () => {
 
           const grid = new Grid(data)
           console.log("grid: ", grid, "data: ", data)
-          const foundWords = FindWordsForGrid(allWords, grid);
+          const foundWords = FindWordsForGrid(allWordsButBlocked, grid);
           const mapping = BuildWordIdToNonOverlappingWordIdsMap(foundWords);
           const allWordIdSet = new Set(foundWords.map((w, i) => i))
 
